@@ -19,12 +19,40 @@ namespace StorageConsoleApp
         private static string _cosmosConString = "AccountEndpoint=https://cosmosaccount-siddharth.documents.azure.com:443/;AccountKey=nVJn3P9EOehzcOZuX2FJ2cfdUceubGZmcFZUtuwjoLkPbFpJhPAeFBnvSTAz8tGEWZsCjt3uLPGw1Se9U6W1XQ==;";
         static void Main(string[] args)
         {
-            
+            //AddItem();
+            //DeleteItem();
+            // ExecutingSP();
+            AddAnItemUsingSP();
             Console.ReadLine();
         }
 
  
-        
+        public static void ExecutingSP()
+        {
+            CosmosClient cosmosClient = new CosmosClient(_cosmosConString);
+            Container container = cosmosClient.GetContainer("demodb", "customer");
+            string result=container.Scripts.ExecuteStoredProcedureAsync<string>("SampleProc", new PartitionKey(String.Empty), null).GetAwaiter().GetResult();
+            Console.WriteLine(result);
+
+        }
+
+        public static void AddAnItemUsingSP()
+        {
+            CosmosClient cosmosClient = new CosmosClient(_cosmosConString);
+            Container container = cosmosClient.GetContainer("demodb", "customer");
+            dynamic[] customers = new dynamic[]
+            {
+                new{id="2",customerid=2,CustomerName="Peter"}
+            };
+            container.Scripts.ExecuteStoredProcedureAsync<string>("AddAnItemProc", new PartitionKey(2), new[] { customers }).GetAwaiter().GetResult();
+            Console.WriteLine("Item has been Added!");
+        }
+
+
+
+
+
+
 
 
         public static void CreateContainerCosmosDB()
@@ -40,7 +68,7 @@ namespace StorageConsoleApp
 
         public static void AddItem()
         {
-            CosmosClient cosmosClient = new CosmosClient("AccountEndpoint=https://cosmosaccountsiddharth.documents.azure.com:443/;AccountKey=yRqSC08Oncmt7LsZ9WSHP25Pntnfj1q26Srjau3uZxx8rTOvaqn3ZLdgX0tyYjOQx7fZfn7aU4hbEk9kIz6QvQ==;");
+            CosmosClient cosmosClient = new CosmosClient(_cosmosConString);
             Container container = cosmosClient.GetContainer("demodb", "customer");
             Customer c = new Customer();
             c.customerid = 1;
@@ -107,6 +135,15 @@ namespace StorageConsoleApp
             Console.WriteLine("Updation completed!");
         }
 
+        public static void DeleteItem()
+        {
+            CosmosClient cosmosClient = new CosmosClient(_cosmosConString, new CosmosClientOptions() { AllowBulkExecution = true });
+            Container container = cosmosClient.GetContainer("demodb", "customer");
+            string id = "1"; //this is the ID that I wish to delete.
+            int partitionKey = 1;
+            container.DeleteItemAsync<Customer>(id, new PartitionKey(partitionKey)).GetAwaiter().GetResult();
+            Console.WriteLine("Item has been deleted!");
+        }
 
 
 
